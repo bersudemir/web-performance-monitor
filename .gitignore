@@ -1,0 +1,17 @@
+# Python sanal ortamı
+.venv/
+
+# Python geçici dosyaları
+__pycache__/
+*.py[cod]
+
+# Gizli ayarlar / parolalar
+.env
+
+# Test dosyaları
+.pytest_cache/
+.coverage
+
+# İşletim sistemi dosyaları
+.DS_Store
+Thumbs.db
