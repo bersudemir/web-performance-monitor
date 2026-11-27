@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% from 'components.html' import status %}
+{% block title %}{{ site.name }}{% endblock %}
+{% block content %}
+<a class="breadcrumb-link" href="{{ url_for('site_list') }}">Site Listesi / Site Detayı</a>
+<div class="page-heading"><div><p class="eyebrow">SİTE DETAYI</p><h1>{{ site.name }}</h1><p>{{ site.url }} · {{ site.interval }} dakikalık örnek kontrol aralığı</p></div>{{ status(site.up) }}</div>
+<section class="stats-grid" aria-label="Örnek performans istatistikleri">
+  <article class="stat-card"><span class="stat-label">Son Durum</span><div class="stat-value status-value {{ 'text-success' if site.up else 'text-danger' }}">{{ 'UP' if site.up else 'DOWN' }}</div><p>HTTP {{ site.code }} · {{ site.response_ms }} ms</p></article>
+  <article class="stat-card"><span class="stat-label">Uptime Oranı</span><div class="stat-value">%{{ site.uptime|string|replace('.', ',') }}</div><p>Son {{ site.history|length }} örnek kontrol üzerinden</p></article>
+  <article class="stat-card"><span class="stat-label">Ortalama Yanıt Süresi</span><div class="stat-value">{{ site.average_ms }}<span class="value-unit">ms</span></div><p>Son {{ site.history|length }} örnek kontrolün ortalaması</p></article>
+</section>
+<section class="panel mb-4"><div class="panel-heading"><div><h2>Yanıt Süresi</h2><p>Örnek veri · Eski kontrolden yeniye · Türkiye saati</p></div><span class="chart-key">Yanıt süresi (ms)</span></div><div class="chart-container"><canvas id="response-chart" role="img" aria-label="Son 12 örnek kontrolün milisaniye cinsinden yanıt süreleri. Değerler aşağıdaki geçmiş tablosunda da bulunur."></canvas><p id="chart-fallback" hidden>Grafik yüklenemedi. Yanıt sürelerini aşağıdaki geçmiş tablosundan inceleyebilirsiniz.</p><noscript>Grafik için JavaScript gereklidir. Veriler aşağıdaki tabloda listelenir.</noscript></div></section>
+<section class="panel"><div class="panel-heading"><div><h2>Kontrol Geçmişi</h2><p>Son {{ site.history|length }} örnek sonuç · Yeniden eskiye</p></div></div><div class="table-responsive"><table class="table monitor-table align-middle mb-0"><caption class="visually-hidden">Örnek kontrol geçmişi</caption><thead><tr><th scope="col">Kontrol zamanı (TSİ)</th><th scope="col">Durum</th><th scope="col">HTTP kodu</th><th scope="col">Yanıt süresi</th></tr></thead><tbody>{% for check in site.history %}<tr><td class="tabular">{{ check.time }}</td><td>{{ status(check.up) }}</td><td><code class="http-code">{{ check.code }}</code></td><td class="tabular">{{ check.response_ms }} ms</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}
+{% block scripts %}<script id="chart-data" type="application/json">{{ chart|tojson }}</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script><script src="{{ url_for('static', path='/js/detail.js') }}" defer></script>{% endblock %}

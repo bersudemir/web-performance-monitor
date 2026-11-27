@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Site Ekle{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">YENİ SİTE</p><h1>Site Ekle</h1><p>İzlemek istediğiniz web sitesinin bilgilerini hazırlayın.</p></div></div>
+<div class="form-layout">
+  <section class="panel form-panel"><h2>Site Bilgileri</h2><p class="text-secondary">Bu form yalnızca önizleme içindir; bilgiler kaydedilmez.</p>
+    <form id="site-form">
+      <div class="mb-4"><label class="form-label" for="site-name">Site adı</label><input class="form-control" id="site-name" name="name" placeholder="Örn. Üniversite Portalı" required maxlength="120" autocomplete="organization"></div>
+      <div class="mb-4"><label class="form-label" for="site-url">Web sitesi URL’si</label><input class="form-control" id="site-url" name="url" type="url" placeholder="https://ornek.com" required maxlength="2048" pattern="https?://.+" aria-describedby="url-help"><div class="form-text" id="url-help">http:// veya https:// ile başlayan tam adresi girin.</div></div>
+      <div class="mb-4"><label class="form-label" for="site-interval">Kontrol aralığı</label><select class="form-select" id="site-interval" name="interval"><option value="1">1 dakika</option><option value="5" selected>5 dakika</option><option value="10">10 dakika</option><option value="15">15 dakika</option><option value="30">30 dakika</option><option value="60">60 dakika</option></select><div class="form-text">Demo seçimi; zamanlanmış bir kontrol başlatmaz.</div></div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit" id="preview-button" disabled>Bilgileri Önizle</button><a class="btn btn-outline-secondary" href="{{ url_for('site_list') }}">Vazgeç</a></div>
+    </form>
+    <noscript><p class="mt-3">Form önizlemesi için JavaScript’i etkinleştirin. Bilgiler kaydedilmez.</p></noscript>
+    <div id="form-preview" class="form-preview mt-4" role="status" hidden><strong>Önizleme hazır · Kayıt yapılmadı</strong><p id="preview-content" class="mb-0 mt-2"></p></div>
+  </section>
+  <aside class="form-help"><span class="demo-tag">Örnek veri</span><h2>Nasıl çalışacak?</h2><p>Backend bağlantısı tamamlandığında eklenen siteler belirlediğiniz aralıklarla kontrol edilebilecek.</p><p>Şu an bu ekranda yalnızca form tasarımını deneyebilirsiniz. Girilen URL’ye istek gönderilmez, bilgiler sunucuya veya tarayıcı depolamasına kaydedilmez.</p></aside>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', path='/js/form.js') }}" defer></script>{% endblock %}
