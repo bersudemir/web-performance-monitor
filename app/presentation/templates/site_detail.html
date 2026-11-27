@@ -3,13 +3,24 @@
 {% block title %}{{ site.name }}{% endblock %}
 {% block content %}
 <a class="breadcrumb-link" href="{{ url_for('site_list') }}">Site Listesi / Site Detayı</a>
-<div class="page-heading"><div><p class="eyebrow">SİTE DETAYI</p><h1>{{ site.name }}</h1><p>{{ site.url }} · {{ site.interval }} dakikalık örnek kontrol aralığı</p></div>{{ status(site.up) }}</div>
-<section class="stats-grid" aria-label="Örnek performans istatistikleri">
-  <article class="stat-card"><span class="stat-label">Son Durum</span><div class="stat-value status-value {{ 'text-success' if site.up else 'text-danger' }}">{{ 'UP' if site.up else 'DOWN' }}</div><p>HTTP {{ site.code }} · {{ site.response_ms }} ms</p></article>
-  <article class="stat-card"><span class="stat-label">Uptime Oranı</span><div class="stat-value">%{{ site.uptime|string|replace('.', ',') }}</div><p>Son {{ site.history|length }} örnek kontrol üzerinden</p></article>
-  <article class="stat-card"><span class="stat-label">Ortalama Yanıt Süresi</span><div class="stat-value">{{ site.average_ms }}<span class="value-unit">ms</span></div><p>Son {{ site.history|length }} örnek kontrolün ortalaması</p></article>
+<div class="page-heading"><div><p class="eyebrow">SİTE DETAYI</p><h1>{{ site.name }}</h1><p>{{ site.url }} · {{ site.interval }} dakikalık kontrol aralığı</p></div>{{ status(site.up) }}</div>
+<section class="stats-grid" aria-label="Performans istatistikleri">
+  <article class="stat-card"><span class="stat-label">Son Durum</span><div class="stat-value status-value">{{ 'UP' if site.up is sameas true else 'DOWN' if site.up is sameas false else '—' }}</div><p>{% if site.code is not none %}HTTP {{ site.code }}{% else %}Henüz ölçüm yok{% endif %}{% if site.response_ms is not none %} · {{ site.response_ms }} ms{% endif %}</p></article>
+  <article class="stat-card"><span class="stat-label">Uptime Oranı</span><div class="stat-value">{% if site.uptime is not none %}%{{ site.uptime|string|replace('.', ',') }}{% else %}—{% endif %}</div><p>{{ 'Kontrol geçmişi üzerinden' if site.uptime is not none else 'Henüz ölçüm yok' }}</p></article>
+  <article class="stat-card"><span class="stat-label">Ortalama Yanıt Süresi</span><div class="stat-value">{% if site.average_ms is not none %}{{ site.average_ms }}<span class="value-unit">ms</span>{% else %}—{% endif %}</div><p>{{ 'Kontrol geçmişinin ortalaması' if site.average_ms is not none else 'Henüz ölçüm yok' }}</p></article>
 </section>
-<section class="panel mb-4"><div class="panel-heading"><div><h2>Yanıt Süresi</h2><p>Örnek veri · Eski kontrolden yeniye · Türkiye saati</p></div><span class="chart-key">Yanıt süresi (ms)</span></div><div class="chart-container"><canvas id="response-chart" role="img" aria-label="Son 12 örnek kontrolün milisaniye cinsinden yanıt süreleri. Değerler aşağıdaki geçmiş tablosunda da bulunur."></canvas><p id="chart-fallback" hidden>Grafik yüklenemedi. Yanıt sürelerini aşağıdaki geçmiş tablosundan inceleyebilirsiniz.</p><noscript>Grafik için JavaScript gereklidir. Veriler aşağıdaki tabloda listelenir.</noscript></div></section>
-<section class="panel"><div class="panel-heading"><div><h2>Kontrol Geçmişi</h2><p>Son {{ site.history|length }} örnek sonuç · Yeniden eskiye</p></div></div><div class="table-responsive"><table class="table monitor-table align-middle mb-0"><caption class="visually-hidden">Örnek kontrol geçmişi</caption><thead><tr><th scope="col">Kontrol zamanı (TSİ)</th><th scope="col">Durum</th><th scope="col">HTTP kodu</th><th scope="col">Yanıt süresi</th></tr></thead><tbody>{% for check in site.history %}<tr><td class="tabular">{{ check.time }}</td><td>{{ status(check.up) }}</td><td><code class="http-code">{{ check.code }}</code></td><td class="tabular">{{ check.response_ms }} ms</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="panel mb-4">
+  <div class="panel-heading"><div><h2>Yanıt Süresi</h2><p>Eski kontrolden yeniye · Türkiye saati</p></div><span class="chart-key">Yanıt süresi (ms)</span></div>
+  {% if chart['values'] %}
+  <div class="chart-container"><canvas id="response-chart" role="img" aria-label="Kontrollerin milisaniye cinsinden yanıt süreleri. Değerler aşağıdaki geçmiş tablosunda da bulunur."></canvas><p id="chart-fallback" hidden>Grafik yüklenemedi. Yanıt sürelerini aşağıdaki geçmiş tablosundan inceleyebilirsiniz.</p><noscript>Grafik için JavaScript gereklidir. Veriler aşağıdaki tabloda listelenir.</noscript></div>
+  {% else %}<div class="empty-state"><p>Henüz yanıt süresi ölçümü bulunmuyor.</p></div>{% endif %}
+</section>
+<section class="panel"><div class="panel-heading"><div><h2>Kontrol Geçmişi</h2><p>Son {{ site.history|length }} sonuç · Yeniden eskiye</p></div></div>
+  <div class="table-responsive"><table class="table monitor-table align-middle mb-0"><caption class="visually-hidden">Kontrol geçmişi</caption>
+    <thead><tr><th scope="col">Kontrol zamanı (TSİ)</th><th scope="col">Durum</th><th scope="col">HTTP kodu</th><th scope="col">Yanıt süresi</th></tr></thead>
+    <tbody>{% for check in site.history %}<tr><td class="tabular">{{ check.time }}</td><td>{{ status(check.up) }}</td><td>{% if check.code is not none %}<code class="http-code">{{ check.code }}</code>{% else %}—{% endif %}</td><td class="tabular">{% if check.response_ms is not none %}{{ check.response_ms }} ms{% else %}—{% endif %}</td></tr>
+    {% else %}<tr><td colspan="4"><div class="empty-state"><p>Henüz kontrol kaydı bulunmuyor.</p></div></td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
 {% endblock %}
-{% block scripts %}<script id="chart-data" type="application/json">{{ chart|tojson }}</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script><script src="{{ url_for('static', path='/js/detail.js') }}" defer></script>{% endblock %}
+{% block scripts %}{% if chart['values'] %}<script id="chart-data" type="application/json">{{ chart|tojson }}</script><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script><script src="{{ url_for('static', path='/js/detail.js') }}" defer></script>{% endif %}{% endblock %}

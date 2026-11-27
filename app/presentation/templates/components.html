@@ -1,19 +1,21 @@
 {% macro status(up) -%}
+{% if up is none %}<span class="status status-unknown">Henüz ölçüm yok</span>{% else %}
 <span class="status {{ 'status-up' if up else 'status-down' }}"><span class="status-dot" aria-hidden="true"></span>{{ 'UP · Çalışıyor' if up else 'DOWN · Çalışmıyor' }}</span>
+{% endif %}
 {%- endmacro %}
 
 {% macro site_table(sites) %}
 <div class="table-responsive">
   <table class="table monitor-table align-middle mb-0">
-    <caption class="visually-hidden">Örnek veri: web sitelerinin son kontrol sonuçları</caption>
+    <caption class="visually-hidden">Web sitelerinin son kontrol sonuçları</caption>
     <thead><tr><th scope="col">Site / URL</th><th scope="col">Durum</th><th scope="col">HTTP kodu</th><th scope="col">Yanıt süresi</th><th scope="col">Son kontrol</th><th scope="col">İşlem</th></tr></thead>
     <tbody>{% for site in sites %}<tr>
       <th scope="row"><span class="site-name">{{ site.name }}</span><span class="site-url">{{ site.url }}</span></th>
-      <td>{{ status(site.up) }}</td><td><code class="http-code">{{ site.code }}</code></td>
-      <td class="tabular">{{ site.response_ms }} <span class="text-secondary">ms</span></td>
-      <td class="text-secondary tabular">{{ site.last_check }}</td>
+      <td>{{ status(site.up) }}</td><td>{% if site.code is not none %}<code class="http-code">{{ site.code }}</code>{% else %}—{% endif %}</td>
+      <td class="tabular">{% if site.response_ms is not none %}{{ site.response_ms }} <span class="text-secondary">ms</span>{% else %}—{% endif %}</td>
+      <td class="text-secondary tabular">{{ site.last_check or '—' }}</td>
       <td><a class="detail-link" href="{{ url_for('site_detail', site_id=site.id) }}" aria-label="{{ site.name }} detayını görüntüle">Detay</a></td>
-    </tr>{% endfor %}</tbody>
+    </tr>{% else %}<tr><td colspan="6"><div class="empty-state"><p>Henüz kayıtlı web sitesi bulunmuyor.</p></div></td></tr>{% endfor %}</tbody>
   </table>
 </div>
 {% endmacro %}
