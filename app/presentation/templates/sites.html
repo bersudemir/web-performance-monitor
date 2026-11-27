@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% from 'components.html' import site_table with context %}
+{% block title %}Site Listesi{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">SİTELER</p><h1>Site Listesi</h1><p>İzlenen web siteleri ve son performans sonuçları.</p></div><a class="btn btn-primary" href="{{ url_for('site_new') }}">＋ Site Ekle</a></div>
+<section class="panel"><div class="panel-heading"><div><h2>Web Siteleri <span class="count-badge">{{ sites|length }}</span></h2><p>Örnek veri · Kontrol zamanları Türkiye saatiyle gösterilir.</p></div></div>{{ site_table(sites) }}</section>
+{% endblock %}
