@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Site Ekle{% endblock %}
+{% block title %}{{ 'Site Düzenle' if site else 'Site Ekle' }}{% endblock %}
 {% block content %}
-<div class="page-heading"><div><p class="eyebrow">YENİ SİTE</p><h1>Site Ekle</h1><p>İzlemek istediğiniz web sitesinin bilgilerini hazırlayın.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">SİTE</p><h1>{{ 'Site Düzenle' if site else 'Site Ekle' }}</h1><p>Web sitesinin bilgilerini girin.</p></div></div>
 <div class="form-layout">
-  <section class="panel form-panel"><h2>Site Bilgileri</h2><p class="text-secondary" id="registration-help">Backend bağlantısı henüz tamamlanmadığı için kayıt işlemi aktif değildir. Bilgiler kaydedilmez.</p>
-    <form id="site-form">
-      <div class="mb-4"><label class="form-label" for="site-name">Site adı</label><input class="form-control" id="site-name" name="name" placeholder="Örn. Üniversite Portalı" required maxlength="120" autocomplete="organization"></div>
-      <div class="mb-4"><label class="form-label" for="site-url">Web sitesi URL’si</label><input class="form-control" id="site-url" name="url" type="url" placeholder="https://ornek.com" required maxlength="2048" pattern="https?://.+" aria-describedby="url-help"><div class="form-text" id="url-help">http:// veya https:// ile başlayan tam adresi girin.</div></div>
-      <div class="mb-4"><label class="form-label" for="site-interval">Kontrol aralığı</label><select class="form-select" id="site-interval" name="interval"><option value="1">1 dakika</option><option value="5" selected>5 dakika</option><option value="10">10 dakika</option><option value="15">15 dakika</option><option value="30">30 dakika</option><option value="60">60 dakika</option></select><div class="form-text">Backend bağlantısı tamamlandığında kullanılacak kontrol sıklığı.</div></div>
-      <div class="form-actions"><button class="btn btn-primary" type="button" disabled aria-describedby="registration-help">Siteyi Kaydet</button><a class="btn btn-outline-secondary" href="{{ url_for('site_list') }}">Vazgeç</a></div>
+  <section class="panel form-panel"><h2>Site Bilgileri</h2>{% if error %}<p class="text-danger" role="alert">{{ error }}</p>{% endif %}
+    <form id="site-form" method="post" action="{{ url_for('site_update', site_id=site.id) if site and site.id else url_for('site_create') }}">
+      <div class="mb-4"><label class="form-label" for="site-name">Site adı</label><input class="form-control" id="site-name" name="name" value="{{ site.name if site else '' }}" placeholder="Örn. Üniversite Portalı" required maxlength="120" autocomplete="organization"></div>
+      <div class="mb-4"><label class="form-label" for="site-url">Web sitesi URL’si</label><input class="form-control" id="site-url" name="url" value="{{ site.url if site else '' }}" type="url" placeholder="https://ornek.com" required maxlength="2048" pattern="https?://.+" aria-describedby="url-help"><div class="form-text" id="url-help">http:// veya https:// ile başlayan tam adresi girin.</div></div>
+      <div class="mb-4"><label class="form-label" for="site-interval">Kontrol aralığı</label><select class="form-select" id="site-interval" name="interval">{% for minutes in [1, 5, 10, 15, 30, 60] %}<option value="{{ minutes }}" {% if (site.interval if site else 5)|int == minutes %}selected{% endif %}>{{ minutes }} dakika</option>{% endfor %}</select><div class="form-text">Kontrol aralığı veritabanında saniye olarak saklanır.</div></div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">{{ 'Değişiklikleri Kaydet' if site else 'Siteyi Kaydet' }}</button><a class="btn btn-outline-secondary" href="{{ url_for('site_list') }}">Vazgeç</a></div>
     </form>
   </section>
-  <aside class="form-help"><h2>Nasıl çalışacak?</h2><p>Backend bağlantısı tamamlandığında eklenen siteler belirlediğiniz aralıklarla kontrol edilebilecek.</p><p>Kayıt işlemi henüz aktif değildir. Girilen URL’ye istek gönderilmez, bilgiler sunucuya veya tarayıcı depolamasına kaydedilmez.</p></aside>
+  <aside class="form-help"><h2>Nasıl çalışır?</h2><p>Site bilgileri veritabanına kaydedilir.</p><p>Henüz otomatik kontrol ve performans ölçümü yapılmaz.</p></aside>
 </div>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', path='/js/form.js') }}" defer></script>{% endblock %}

@@ -1,14 +1,15 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% from 'components.html' import status %}
 {% block title %}{{ site.name }}{% endblock %}
 {% block content %}
 <a class="breadcrumb-link" href="{{ url_for('site_list') }}">Site Listesi / Site Detayı</a>
-<div class="page-heading"><div><p class="eyebrow">SİTE DETAYI</p><h1>{{ site.name }}</h1><p>{{ site.url }} · {{ site.interval }} dakikalık kontrol aralığı</p></div>{{ status(site.up) }}</div>
+<div class="page-heading"><div><p class="eyebrow">SİTE DETAYI</p><h1>{{ site.name }}</h1><p>{{ site.url }} · {{ site.interval }} dakikalık kontrol aralığı</p></div><div>{{ status(site.up) }} <a class="detail-link" href="{{ url_for('site_edit', site_id=site.id) }}">Düzenle</a> <form method="post" action="{{ url_for('site_delete', site_id=site.id) }}" class="d-inline"><button class="btn btn-outline-secondary" type="submit" onclick="return confirm('Site silinsin mi?')">Sil</button></form></div></div>
 <section class="stats-grid" aria-label="Performans istatistikleri">
   <article class="stat-card"><span class="stat-label">Son Durum</span><div class="stat-value status-value">{{ 'UP' if site.up is sameas true else 'DOWN' if site.up is sameas false else '—' }}</div><p>{% if site.code is not none %}HTTP {{ site.code }}{% else %}Henüz ölçüm yok{% endif %}{% if site.response_ms is not none %} · {{ site.response_ms }} ms{% endif %}</p></article>
   <article class="stat-card"><span class="stat-label">Uptime Oranı</span><div class="stat-value">{% if site.uptime is not none %}%{{ site.uptime|string|replace('.', ',') }}{% else %}—{% endif %}</div><p>{{ 'Kontrol geçmişi üzerinden' if site.uptime is not none else 'Henüz ölçüm yok' }}</p></article>
   <article class="stat-card"><span class="stat-label">Ortalama Yanıt Süresi</span><div class="stat-value">{% if site.average_ms is not none %}{{ site.average_ms }}<span class="value-unit">ms</span>{% else %}—{% endif %}</div><p>{{ 'Kontrol geçmişinin ortalaması' if site.average_ms is not none else 'Henüz ölçüm yok' }}</p></article>
 </section>
+<section class="panel mb-4"><div class="panel-heading"><div><h2>Yanıt Süresi Özeti</h2><p>Ölçülen kontroller üzerinden</p></div></div><div class="p-3">Minimum: {{ site.min_ms if site.min_ms is not none else '—' }}{% if site.min_ms is not none %} ms{% endif %} · Maksimum: {{ site.max_ms if site.max_ms is not none else '—' }}{% if site.max_ms is not none %} ms{% endif %} · p95: {{ site.p95_ms if site.p95_ms is not none else '—' }}{% if site.p95_ms is not none %} ms{% endif %}</div></section>
 <section class="panel mb-4">
   <div class="panel-heading"><div><h2>Yanıt Süresi</h2><p>Eski kontrolden yeniye · Türkiye saati</p></div><span class="chart-key">Yanıt süresi (ms)</span></div>
   {% if chart['values'] %}

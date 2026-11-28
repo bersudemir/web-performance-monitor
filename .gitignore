@@ -7,6 +7,12 @@ __pycache__/
 
 # Gizli ayarlar / parolalar
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+.aws/
 
 # Test dosyaları
 .pytest_cache/
