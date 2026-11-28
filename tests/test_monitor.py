@@ -39,6 +39,29 @@ class MonitorTests(unittest.TestCase):
             stream.return_value.__enter__.side_effect = httpx.TimeoutException("timed out")
             self.assertEqual(check_url("https://example.com")[:3], (False, None, None))
 
+    def test_invalid_idna_is_recorded_as_down(self):
+        invalid_url = "https://☃.example"
+        up, code, response_ms, error = check_url(invalid_url)
+        self.assertEqual((up, code, response_ms), (False, None, None))
+        self.assertIn("InvalidURL", error)
+        self.assertIn("Invalid IDNA hostname", error)
+
+        with SessionLocal.begin() as session:
+            site = Site(name="Invalid IDNA test", url=invalid_url, check_interval_seconds=60)
+            session.add(site)
+            session.flush()
+            site_id = site.id
+        try:
+            check_site(site_id)
+            with SessionLocal() as session:
+                result = session.query(CheckResult).filter_by(site_id=site_id).one()
+                self.assertEqual((result.is_up, result.status_code, result.response_ms),
+                                 (False, None, None))
+                self.assertIn("InvalidURL", result.error)
+        finally:
+            with SessionLocal.begin() as session:
+                session.execute(delete(Site).where(Site.id == site_id))
+
     def test_worker_persists_failure_and_statistics(self):
         with SessionLocal.begin() as session:
             site = Site(name="Worker test", url="https://example.com", check_interval_seconds=60)

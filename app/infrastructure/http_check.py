@@ -38,8 +38,8 @@ class PinnedBackend(SyncBackend):
 
 def check_url(url: str) -> tuple[bool, int | None, int | None, str | None]:
     started = perf_counter()
-    current = httpx.URL(url)
     try:
+        current = httpx.URL(url)
         for hop in range(MAX_REDIRECTS + 1):
             if current.scheme not in ("http", "https") or not current.host or current.userinfo:
                 raise UnsafeAddress("HTTP/HTTPS dışı veya kimlik bilgili adres engellendi")
@@ -58,5 +58,5 @@ def check_url(url: str) -> tuple[bool, int | None, int | None, str | None]:
                 continue
             elapsed = max(0, round((perf_counter() - started) * 1000))
             return 200 <= status < 400, status, elapsed, None
-    except (UnsafeAddress, httpx.HTTPError, ValueError) as error:
+    except (UnsafeAddress, httpx.HTTPError, httpx.InvalidURL, ValueError) as error:
         return False, None, None, f"{type(error).__name__}: {error}"[:500]

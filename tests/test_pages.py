@@ -1,5 +1,6 @@
 """HTTP tests against the configured PostgreSQL database."""
 
+from html import unescape
 import re
 import unittest
 from unittest.mock import patch
@@ -74,6 +75,21 @@ class PageTests(unittest.TestCase):
             'name': 'Test', 'url': 'https://example.com', 'interval': '99'})
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.client.get('/sites/999999999').status_code, 404)
+
+    def test_malformed_url_returns_422_for_create_and_update(self):
+        malformed = 'http://['
+        response = self.client.post('/sites/new', data={
+            'name': 'Test', 'url': malformed, 'interval': '5'})
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("Geçerli bir http:// veya https:// URL'si girin.", unescape(response.text))
+
+        site_id = self.create()
+        response = self.client.post(f'/sites/{site_id}/edit', data={
+            'name': 'Test', 'url': malformed, 'interval': '5'})
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("Geçerli bir http:// veya https:// URL'si girin.", unescape(response.text))
+        with SessionLocal() as session:
+            self.assertEqual(session.get(Site, site_id).url, 'https://example.com')
 
     def test_real_results_are_displayed_and_deleted_with_site(self):
         site_id = self.create()

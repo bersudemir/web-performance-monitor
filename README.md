@@ -143,14 +143,14 @@ git clone https://github.com/bersudemir/web-performance-monitor.git
 cd web-performance-monitor
 cp .env.example .env  # yalnızca ilk kurulumda
 nano .env             # gerçek parolayı, NGINX_BIND_ADDRESS=0.0.0.0 ve NGINX_PORT=80 ayarlayın
-docker compose up -d --build --wait
-docker compose ps
+sudo docker compose up -d --build --wait
+sudo docker compose ps
 curl http://127.0.0.1/health
 ```
 
 EC2 Security Group'ta TCP 80 için kullanıcıların izin verilen kaynak IP aralığını, SSH 22 için yönetim IP'nizi tanımlayın. PostgreSQL 5432 ve FastAPI 8000 için dış erişim kuralı eklemeyin. Sunucunun genel IP'si veya DNS adıyla `http://<EC2-adresi>/dashboard` açılır. EC2 üzerinde bu komutların sonucu ve güvenlik grubu kuralları bu depodan doğrulanamaz.
 
-Güncelleme ve veri kaybı olmadan durdurma için aynı komutları PowerShell veya Ubuntu terminalinde çalıştırın:
+Güncelleme ve veri kaybı olmadan durdurma için Windows PowerShell'de:
 
 ```bash
 git pull --ff-only origin main
@@ -159,11 +159,20 @@ docker compose logs --tail 50 web worker
 docker compose down
 ```
 
+Ubuntu EC2 terminalinde:
+
+```bash
+git pull --ff-only origin main
+sudo docker compose up -d --build --wait
+sudo docker compose logs --tail 50 web worker
+sudo docker compose down
+```
+
 `docker compose down` konteynerleri kaldırır, named volume'ü korur. **`docker compose down -v` volume'ü ve veritabanı verilerini siler; kullanmayın.**
 
 ## Performans deneyleri
 
-1, 5 ve 10 site senaryoları aynı kontrol aralığı ve benzer gözlem süresiyle karşılaştırılmalıdır. Her senaryoda `docker compose stats --no-stream` çıktısından CPU, RAM ve NET I/O değerleri birkaç kez alınır. Ölçümler için aynı süre, site listesi ve ağ koşulları kaydedilir; tek anlık değere bakmak yerine tekrarların aralığı ve ortalaması karşılaştırılır. Bu deneyler henüz yapılmamıştır; aşağıdaki tablo sonuç şablonudur.
+1, 5 ve 10 site senaryoları aynı kontrol aralığı ve aynı gözlem süresiyle karşılaştırılmalıdır. Her senaryoda `docker compose stats --no-stream` (Ubuntu'da `sudo docker compose stats --no-stream`) çıktısından CPU, RAM ve NET I/O değerleri birkaç kez alınır. **NET I/O konteyner başladığından beri biriken ağ trafiğidir; tek başına son örnekleme aralığının trafiği değildir.** Her senaryo için gözlem başlangıcı ve bitişindeki NET I/O değerlerini kaydedin; aynı süre boyunca oluşan artışı (bitiş − başlangıç) karşılaştırın. Tekrarları aynı aralık, süre ve benzer ağ koşullarında yapıp CPU/RAM örneklerini ve NET I/O artışlarını birlikte değerlendirin. Bu deneyler henüz yapılmamıştır; aşağıdaki tablo sonuç şablonudur.
 
 | Site sayısı | Kontrol aralığı | Tekrar sayısı | CPU | RAM | NET I/O | Not |
 | ---: | --- | ---: | --- | --- | --- | --- |
@@ -173,17 +182,19 @@ docker compose down
 
 ## Test ve sorun giderme
 
+Ubuntu üzerinde yerel/ayrı test veritabanıyla Docker komutları (gerçek AWS veritabanında çalıştırmayın):
+
 ```bash
-docker compose ps
-docker compose exec web python -m alembic current
-docker compose exec web python -m alembic check
-docker compose exec web python -m unittest discover -s tests -v
-docker compose logs --tail 100 worker
-docker compose logs --tail 100 web db nginx
-docker compose stats --no-stream
+sudo docker compose ps
+sudo docker compose exec web python -m alembic current
+sudo docker compose exec web python -m alembic check
+sudo docker compose exec web python -m unittest discover -s tests -v
+sudo docker compose logs --tail 100 worker
+sudo docker compose logs --tail 100 web db nginx
+sudo docker compose stats --no-stream
 ```
 
-Testler URL/DNS güvenliği, worker zamanlaması, veritabanına sonuç yazma, site CRUD işlemleri, arayüzde ölçümsüz/başarısız durumlar ve HTML kaçışını kapsar. Testler çalışan PostgreSQL gerektirir; `docker compose up -d --wait` sonrasında çalıştırın. Testlerin oluşturduğu siteler temizlenir.
+Testler URL/DNS güvenliği, worker zamanlaması, veritabanına sonuç yazma, site CRUD işlemleri, arayüzde ölçümsüz/başarısız durumlar ve HTML kaçışını kapsar. Testler çalışan PostgreSQL gerektirir ve **geçici site/kontrol kayıtları yazar**; normal bitişte bunları temizlese de gerçek AWS veritabanı yerine yerel veya ayrı bir test veritabanında çalıştırılmalıdır. Windows'ta aynı Docker komutlarını `sudo` olmadan kullanın.
 
 - **Konteyner sağlıksızsa:** `docker compose ps` ve ilgili servis loglarını inceleyin. `db` healthcheck'i `pg_isready`, `web` healthcheck'i `/health` kullanır. Worker logu zamanlayıcı ve HTTP hata kayıtlarını gösterir.
 - **SSL/TLS veya bağlantı hatasında:** Worker'ın bulunduğu ağdan hedef siteye erişimi, DNS çözümünü ve sertifika durumunu inceleyin. Hata metni site detayında görülebilir.

@@ -16,6 +16,7 @@ ISTANBUL = ZoneInfo("Europe/Istanbul")
 
 def validate_site(name: str, url: str, interval: int) -> tuple[str, str, int]:
     name, url = name.strip(), url.strip()
+    url_error = "Geçerli bir http:// veya https:// URL'si girin."
     try:
         parsed = urlsplit(url)
         valid_host = bool(parsed.hostname) and parsed.port != 0
@@ -25,12 +26,12 @@ def validate_site(name: str, url: str, interval: int) -> tuple[str, str, int]:
         except ValueError:
             valid_host = valid_host and host.lower() != "localhost" and not host.lower().endswith(".local")
     except ValueError:
-        valid_host = False
+        raise ValueError(url_error) from None
     if not name or len(name) > 120:
         raise ValueError("Site adı 1–120 karakter olmalıdır.")
     if (len(url) > 2048 or parsed.scheme.lower() not in {"http", "https"}
             or not valid_host or parsed.username or parsed.password or any(c.isspace() for c in url)):
-        raise ValueError("Geçerli bir http:// veya https:// URL'si girin.")
+        raise ValueError(url_error)
     if interval not in {1, 5, 10, 15, 30, 60}:
         raise ValueError("Geçerli bir kontrol aralığı seçin.")
     return name, url, interval * 60
