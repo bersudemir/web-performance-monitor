@@ -1,6 +1,6 @@
 {% macro status(up) -%}
 {% if up is none %}<span class="status status-unknown">Henüz ölçüm yok</span>{% else %}
-<span class="status {{ 'status-up' if up else 'status-down' }}"><span class="status-dot" aria-hidden="true"></span>{{ 'UP · Çalışıyor' if up else 'DOWN · Çalışmıyor' }}</span>
+<span class="status {{ 'status-up' if up else 'status-down' }}"><span class="status-dot" aria-hidden="true"></span>{{ 'UP · Erişilebilir' if up else 'DOWN · Erişilemedi' }}</span>
 {% endif %}
 {%- endmacro %}
 

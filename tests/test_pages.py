@@ -2,6 +2,7 @@
 
 import re
 import unittest
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
@@ -47,7 +48,7 @@ class PageTests(unittest.TestCase):
             self.assertIn('Test Portalı', response.text)
             self.assertIn('Henüz ölçüm yok', response.text)
             if path == f'/sites/{site_id}':
-                self.assertNotIn('UP · Çalışıyor', response.text)
+                self.assertNotIn('UP · Erişilebilir', response.text)
         detail = self.client.get(f'/sites/{site_id}').text
         self.assertNotIn('chart-data', detail)
         self.assertIn('Henüz kontrol kaydı bulunmuyor.', detail)
@@ -79,14 +80,50 @@ class PageTests(unittest.TestCase):
         with SessionLocal.begin() as session:
             session.add(CheckResult(site_id=site_id, is_up=True, status_code=200, response_ms=0))
         detail = self.client.get(f'/sites/{site_id}').text
-        self.assertIn('UP · Çalışıyor', detail)
+        self.assertIn('UP · Erişilebilir', detail)
         self.assertIn('HTTP 200', detail)
         self.assertIn('chart-data', detail)
         self.assertIn('"values": [0]', detail)
-        self.assertIn('UP · Çalışıyor', self.client.get('/dashboard').text)
+        dashboard = self.client.get('/dashboard').text
+        self.assertIn('UP · Erişilebilir', dashboard)
+        self.assertIn('Son kontrolü başarılı olan siteler', dashboard)
         self.client.post(f'/sites/{site_id}/delete')
         with SessionLocal() as session:
             self.assertIsNone(session.get(Site, site_id))
+
+    def test_form_and_common_text(self):
+        page = self.client.get('/sites/new').text
+        self.assertIn('İzlemek istediğiniz web sitesini ekleyin.', page)
+        self.assertIn('Otomatik İzleme', page)
+        self.assertIn('Sistem, web sitesini seçtiğiniz aralıklarla otomatik kontrol eder.', page)
+        self.assertIn('AWS EC2 · Docker · PostgreSQL', page)
+        self.assertNotIn('Henüz otomatik kontrol ve performans ölçümü yapılmaz.', page)
+        site_id = self.create()
+        self.assertIn('İzlenen web sitesinin bilgilerini güncelleyin.',
+                      self.client.get(f'/sites/{site_id}/edit').text)
+
+    def test_unmeasured_dashboard_and_connection_error_are_distinct(self):
+        with patch('app.presentation.pages.get_sites', return_value=[]):
+            empty = self.client.get('/dashboard').text
+        self.assertIn('Erişilebilen Site', empty)
+        self.assertIn('Erişilemeyen Site', empty)
+        self.assertEqual(empty.count('Henüz ölçüm yok'), 2)
+
+        site_id = self.create()
+        detail = self.client.get(f'/sites/{site_id}').text
+        self.assertIn('Henüz ölçüm yok', detail)
+        self.assertNotIn('Bağlantı hatası', detail)
+        with SessionLocal.begin() as session:
+            session.add(CheckResult(site_id=site_id, is_up=False,
+                                    error='<script>alert("x")</script>'))
+        detail = self.client.get(f'/sites/{site_id}').text
+        self.assertIn('Bağlantı hatası', detail)
+        self.assertIn('DOWN · Erişilemedi', detail)
+        self.assertIn('Başarılı Kontrol Oranı', detail)
+        self.assertIn('&lt;script&gt;', detail)
+        self.assertNotIn('<script>alert("x")</script>', detail)
+        dashboard = self.client.get('/dashboard').text
+        self.assertIn('Son kontrolü başarısız olan siteler', dashboard)
 
 
 if __name__ == '__main__':

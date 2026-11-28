@@ -4,9 +4,9 @@
 <div class="page-heading"><div><p class="eyebrow">DASHBOARD</p><h1>Genel Bakış</h1><p>Web sitelerinizin durumunu tek bir yerden takip edin.</p></div><a class="btn btn-primary" href="{{ url_for('site_new') }}">＋ Site Ekle</a></div>
 <section class="stats-grid" aria-label="Site istatistikleri">
   <article class="stat-card"><span class="stat-label">Toplam Site</span><div class="stat-value">{{ sites|length }}<span class="stat-symbol neutral" aria-hidden="true">◎</span></div><p>İzleme listesindeki siteler</p></article>
-  <article class="stat-card"><span class="stat-label">Çalışan Site</span><div class="stat-value">{{ up_count if up_count is not none else '—' }}<span class="stat-symbol positive" aria-hidden="true">✓</span></div><p>Henüz ölçüm yok</p></article>
-  <article class="stat-card"><span class="stat-label">Çalışmayan Site</span><div class="stat-value">{{ down_count if down_count is not none else '—' }}<span class="stat-symbol negative" aria-hidden="true">!</span></div><p>Henüz ölçüm yok</p></article>
+  <article class="stat-card"><span class="stat-label">Erişilebilen Site</span><div class="stat-value">{{ up_count if up_count is not none else '—' }}<span class="stat-symbol positive" aria-hidden="true">✓</span></div><p>{{ 'Son kontrolü başarılı olan siteler' if up_count is not none else 'Henüz ölçüm yok' }}</p></article>
+  <article class="stat-card"><span class="stat-label">Erişilemeyen Site</span><div class="stat-value">{{ down_count if down_count is not none else '—' }}<span class="stat-symbol negative" aria-hidden="true">!</span></div><p>{{ 'Son kontrolü başarısız olan siteler' if down_count is not none else 'Henüz ölçüm yok' }}</p></article>
 </section>
 <section class="panel"><div class="panel-heading"><div><h2>Son Kontroller</h2><p>Her site için en son kontrol sonucu</p></div><a class="detail-link" href="{{ url_for('site_list') }}">Tüm siteler</a></div>{{ site_table(sites) }}</section>
-<div class="info-panel"><span class="info-icon" aria-hidden="true">i</span><div><h2>Performansı zaman içinde değerlendirin</h2><p>Gerçek ölçümler alındığında site detayında erişilebilirlik oranı, yanıt süreleri ve kontrol geçmişi gösterilecek.</p></div></div>
+<div class="info-panel"><span class="info-icon" aria-hidden="true">i</span><div><h2>Performansı zaman içinde değerlendirin</h2><p>Otomatik kontrollerin başarı oranını, yanıt sürelerini ve geçmişini site detayında inceleyebilirsiniz.</p></div></div>
 {% endblock %}

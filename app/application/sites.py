@@ -77,6 +77,7 @@ def display_site(site: Site) -> dict:
         "interval": site.check_interval_seconds // 60,
         "up": latest.is_up if latest else None,
         "code": latest.status_code if latest else None,
+        "error": latest.error if latest else None,
         "response_ms": latest.response_ms if latest else None,
         "last_check": local_time(latest.checked_at) if latest else None,
         "uptime": round(100 * sum(item.is_up for item in checks) / len(checks), 1) if checks else None,
@@ -85,5 +86,6 @@ def display_site(site: Site) -> dict:
         "max_ms": ordered[-1] if ordered else None,
         "p95_ms": ordered[ceil(0.95 * len(ordered)) - 1] if ordered else None,
         "history": [{"time": local_time(item.checked_at), "up": item.is_up,
-                     "code": item.status_code, "response_ms": item.response_ms} for item in checks],
+                     "code": item.status_code, "response_ms": item.response_ms,
+                     "error": item.error} for item in checks],
     }
