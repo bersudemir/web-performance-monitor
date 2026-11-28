@@ -28,6 +28,40 @@ Bu araç tarayıcıda sayfa yükleme hızını, JavaScript çalışmasını veya
 | Docker, Docker Compose | Dört servisin imaj, konteyner, ağ ve volume yönetimi |
 | AWS EC2, Ubuntu 24.04 | Sistemin çalıştırıldığı bulut sanal makinesi |
 
+## Uygulama Ekran Görüntüleri
+
+Aşağıdaki ekran görüntüleri AWS üzerinde çalışan uygulamadan ve dağıtım ortamından alınmıştır.
+
+### Genel Bakış
+
+12 siteyi izleyen AWS web paneli.
+
+![Genel Bakış: AWS web panelinde 12 izlenen site](docs/screenshots/dashboard.png)
+
+### Site Listesi
+
+Kayıtlı sitelerin erişilebilirlik durumları, HTTP kodları ve yanıt süreleri.
+
+![Site Listesi: erişilebilirlik durumları, HTTP kodları ve yanıt süreleri](docs/screenshots/site-listesi.png)
+
+### Site Ekle
+
+Yeni izleme hedefi ve kontrol aralığı tanımlama.
+
+![Site Ekle: yeni izleme hedefi ve kontrol aralığı formu](docs/screenshots/site-ekle.png)
+
+### Site Detayı
+
+Google için yanıt süresi grafiği, başarı oranı, minimum, maksimum, p95 ve geçmiş kontroller.
+
+![Site Detayı: Google ölçümleri ve geçmiş kontroller](docs/screenshots/site-detay.png)
+
+### AWS Docker
+
+Ubuntu terminalinde çalışan nginx, web, worker ve PostgreSQL konteynerleri.
+
+![AWS Docker: Ubuntu üzerinde çalışan dört konteyner](docs/screenshots/docker-aws.png)
+
 ## Mimari ve sanallaştırma
 
 AWS EC2, Ubuntu 24.04 çalıştıran bir bulut sanal makinesidir. Docker uygulama bileşenlerini ayrı konteynerlere ayırır; `web` ile `worker` aynı Python imajını farklı komutlarla kullanır. Compose'un `app_net` bridge ağı, servislerin birbirine `web` ve `db` adlarıyla erişmesini sağlar. PostgreSQL'in verisi `web-performance-monitor_postgres_data` adlı Docker volume'de tutulur ve konteyner yeniden oluşturulsa da kalır. Böylece EC2 sunucu sanallaştırmasını, konteynerler uygulama izolasyonunu, bridge ağı ağ izolasyonunu ve named volume kalıcı depolama soyutlamasını sağlar.
@@ -172,13 +206,55 @@ sudo docker compose down
 
 ## Performans deneyleri
 
-1, 5 ve 10 site senaryoları aynı kontrol aralığı ve aynı gözlem süresiyle karşılaştırılmalıdır. Her senaryoda `docker compose stats --no-stream` (Ubuntu'da `sudo docker compose stats --no-stream`) çıktısından CPU, RAM ve NET I/O değerleri birkaç kez alınır. **NET I/O konteyner başladığından beri biriken ağ trafiğidir; tek başına son örnekleme aralığının trafiği değildir.** Her senaryo için gözlem başlangıcı ve bitişindeki NET I/O değerlerini kaydedin; aynı süre boyunca oluşan artışı (bitiş − başlangıç) karşılaştırın. Tekrarları aynı aralık, süre ve benzer ağ koşullarında yapıp CPU/RAM örneklerini ve NET I/O artışlarını birlikte değerlendirin. Bu deneyler henüz yapılmamıştır; aşağıdaki tablo sonuç şablonudur.
+Deneyler **28 Kasım 2026** tarihinde AWS EC2 Stockholm (`eu-north-1`) bölgesindeki `t3.small` sanal makinede (2 vCPU, 2 GiB RAM, 20 GB EBS), Ubuntu 24.04 LTS ve Docker Compose ile yürütüldü. Uygulama PostgreSQL 17 ile nginx, web, worker ve db konteynerlerinden oluşuyordu.
 
-| Site sayısı | Kontrol aralığı | Tekrar sayısı | CPU | RAM | NET I/O | Not |
-| ---: | --- | ---: | --- | --- | --- | --- |
-| 1 | — | — | — | — | — | Ölçülmedi |
-| 5 | — | — | — | — | — | Ölçülmedi |
-| 10 | — | — | — | — | — | Ölçülmedi |
+Üç ayrı senaryoda sırasıyla 8, 10 ve 12 web sitesi 1 dakikalık kontrol aralığıyla izlendi. Her senaryoda yaklaşık 5 dakika boyunca birer dakika arayla altı `docker compose stats --no-stream` örneği alındı. Aynı gözlem aralıklarındaki gerçek HTTP kontrol kayıtları PostgreSQL `check_results` tablosundan SQL ile hesaplandı.
+
+| Senaryo | Ölçüm aralığı (UTC) |
+| --- | --- |
+| 8 site | 17:06:01–17:11:17 |
+| 10 site | 17:33:26–17:38:42 |
+| 12 site | 17:42:03–17:47:20 |
+
+### Gerçek HTTP sonuçları
+
+| Ölçüt | 8 site | 10 site | 12 site |
+| --- | ---: | ---: | ---: |
+| Toplam kontrol | 41 | 50 | 63 |
+| Başarılı kontrol | 36 | 45 | 58 |
+| Başarısız kontrol | 5 | 5 | 5 |
+| Başarı oranı | %87,80 | %90,00 | %92,06 |
+| Ortalama yanıt süresi | 244,5 ms | 195,6 ms | 151,6 ms |
+
+Başarı oranı = başarılı (UP) kontrol sayısı / toplam kontrol sayısı × 100. Ortalama `response_ms`, yalnızca NULL olmayan yanıt süresi kayıtları üzerinden hesaplanmıştır.
+
+### Gerçek kaynak tüketimi
+
+| Ölçüt | 8 site | 10 site | 12 site |
+| --- | ---: | ---: | ---: |
+| Ortalama toplam RAM | 175,25 MiB | 176,51 MiB | 178,47 MiB |
+| Ortalama toplam CPU | %0,54 | %0,48 | %3,38 |
+| Worker ortalama RAM | 67,21 MiB | 67,70 MiB | 68,12 MiB |
+| Kaynak ölçüm sayısı | 6 | 6 | 6 |
+
+Toplam RAM dört Docker konteynerini kapsar; işletim sistemi dahil EC2 sunucusunun toplam RAM tüketimi değildir. CPU ortalamaları Docker'ın raporladığı anlık konteyner CPU yüzdelerinden hesaplanmıştır.
+
+### Worker ağ trafiği artışı
+
+| Ölçüt | 8 site | 10 site | 12 site |
+| --- | ---: | ---: | ---: |
+| Gelen trafik artışı | 1,50 MB | 1,60 MB | 2,10 MB |
+| Giden trafik artışı | 0,22 MB | 0,25 MB | 0,30 MB |
+
+Ağ değerleri Docker'ın kümülatif NET I/O sayaçlarının ilk ve son ölçümleri arasındaki yaklaşık farktır.
+
+### Değerlendirme ve sınırlamalar
+
+- 8 siteden 12 siteye geçerken ortalama toplam konteyner RAM kullanımı 3,22 MiB (yaklaşık %1,84) arttı.
+- 12 site senaryosundaki yüksek CPU ortalaması bazı anlık sıçramalardan etkilenmiştir; sürekli yüksek CPU kullanımı bu ölçümlerle kanıtlanmamıştır.
+- Ortalama HTTP yanıt süresi ve başarı oranındaki değişimlerde farklı hedef sitelerin yanıt davranışları etkili olabilir. Bu sonuçlar, sistemin site sayısı arttıkça kesin olarak hızlandığı iddiasını desteklemez.
+- HTTP/TLS hataları, hedef web sitesinin herkes için kapalı olduğunu göstermeyebilir; ölçüm worker'ın bulunduğu ağdan yapılmıştır.
+- Bunlar kısa süreli gözlemlerdir; yüksek eşzamanlı kullanıcı yükü veya uzun dönem kapasite testi değildir.
 
 ## Test ve sorun giderme
 
@@ -194,7 +270,7 @@ sudo docker compose logs --tail 100 web db nginx
 sudo docker compose stats --no-stream
 ```
 
-Testler URL/DNS güvenliği, worker zamanlaması, veritabanına sonuç yazma, site CRUD işlemleri, arayüzde ölçümsüz/başarısız durumlar ve HTML kaçışını kapsar. Testler çalışan PostgreSQL gerektirir ve **geçici site/kontrol kayıtları yazar**; normal bitişte bunları temizlese de gerçek AWS veritabanı yerine yerel veya ayrı bir test veritabanında çalıştırılmalıdır. Windows'ta aynı Docker komutlarını `sudo` olmadan kullanın.
+Test dosyalarında 18 test metodu bulunur. Kod incelemesine göre kapsam; veritabanı yapılandırması, migration SQL şeması, URL/DNS güvenliği, worker zamanlaması ve sonuç yazma, site CRUD işlemleri, arayüzde ölçümsüz/başarısız durumlar ve HTML kaçışıdır. Bu belge güncellemesinde testler çalıştırılmadı; doğrulanmış bir çalıştırma sonucu bildirilmemektedir. Testler çalışan PostgreSQL gerektirir ve **geçici site/kontrol kayıtları yazar**; normal bitişte bunları temizlese de gerçek AWS veritabanı yerine yerel veya ayrı bir test veritabanında çalıştırılmalıdır. Windows'ta aynı Docker komutlarını `sudo` olmadan kullanın.
 
 - **Konteyner sağlıksızsa:** `docker compose ps` ve ilgili servis loglarını inceleyin. `db` healthcheck'i `pg_isready`, `web` healthcheck'i `/health` kullanır. Worker logu zamanlayıcı ve HTTP hata kayıtlarını gösterir.
 - **SSL/TLS veya bağlantı hatasında:** Worker'ın bulunduğu ağdan hedef siteye erişimi, DNS çözümünü ve sertifika durumunu inceleyin. Hata metni site detayında görülebilir.
@@ -221,6 +297,7 @@ Testler URL/DNS güvenliği, worker zamanlaması, veritabanına sonuç yazma, si
 ├── migrations/                  # Alembic ortamı ve 0001 migration'ı
 ├── nginx/default.conf          # Nginx → web ters vekil ayarı
 ├── tests/                      # Veritabanı, worker ve sayfa testleri
+├── docs/screenshots/           # Uygulama ve AWS Docker ekran görüntüleri
 ├── Dockerfile                  # Python 3.12 uygulama imajı
 ├── compose.yaml                # nginx, web, worker, db; ağ ve volume
 ├── .dockerignore               # İmaj bağlamından çıkarılan dosyalar
